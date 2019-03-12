@@ -50,8 +50,7 @@ PRODUCT_PACKAGES += \
     calmodule.cfg \
     sensord \
     sensors.msm8916 \
-    libcalmodule_akm.so \
-    libcalmodule_common
+    libcalmodule_akm.so
 
 # Soft magnetic calibration
 PRODUCT_COPY_FILES+= \
