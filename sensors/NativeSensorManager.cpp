@@ -324,21 +324,25 @@ NativeSensorManager::~NativeSensorManager()
 			delete context[i].driver;
 		}
 
-		list_for_each_safe(node, n, &context[i].listener) {
-			item = node_to_item(node, struct SensorRefMap, list);
-			if (item != NULL) {
-				list_remove(&item->list);
-				delete item;
-			}
-		}
-
-		list_for_each_safe(node, n, &context[i].dep_list) {
-			item = node_to_item(node, struct SensorRefMap, list);
-			if (item != NULL) {
-				list_remove(&item->list);
-				delete item;
-			}
-		}
+        if (!list_empty(&(context[i].listener))) {
+            list_for_each_safe(node, n, &context[i].listener) {
+                item = node_to_item(node, struct SensorRefMap, list);
+                if (item != NULL) {
+                    list_remove(&item->list);
+                    delete item;
+                }
+            }
+        }
+        
+        if (!list_empty(&(context[i].dep_list))) {
+            list_for_each_safe(node, n, &context[i].dep_list) {
+                item = node_to_item(node, struct SensorRefMap, list);
+                if (item != NULL) {
+                    list_remove(&item->list);
+                    delete item;
+                }
+            }
+        }
 	}
 }
 
@@ -503,7 +507,8 @@ int NativeSensorManager::getDataInfo() {
 				virtualSensorList[POCKET])) {
 			addDependency(&context[mSensorCount], sensor_proximity.handle);
 			addDependency(&context[mSensorCount], sensor_light.handle);
-			mSensorCount++;
+            context[mSensorCount].sensor->stringType = sensorTypeToSensorString(context[mSensorCount].sensor->type);	
+            mSensorCount++;
 		}
 	}
 
@@ -518,7 +523,8 @@ int NativeSensorManager::getDataInfo() {
 					virtualSensorList[ORIENTATION])) {
 			addDependency(&context[mSensorCount], sensor_acc.handle);
 			addDependency(&context[mSensorCount], sensor_mag.handle);
-			mSensorCount++;
+ 			context[mSensorCount].sensor->stringType = sensorTypeToSensorString(context[mSensorCount].sensor->type);
+            mSensorCount++;
 		}
 
 		if (!has_gyro) {
@@ -533,6 +539,7 @@ int NativeSensorManager::getDataInfo() {
 						virtualSensorList[PSEUDO_GYROSCOPE])) {
 				addDependency(&context[mSensorCount], sensor_acc.handle);
 				addDependency(&context[mSensorCount], sensor_mag.handle);
+                context[mSensorCount].sensor->stringType = sensorTypeToSensorString(context[mSensorCount].sensor->type);
 				mSensorCount++;
 			}
 #endif
@@ -543,6 +550,7 @@ int NativeSensorManager::getDataInfo() {
 						virtualSensorList[LINEAR_ACCELERATION])) {
 				addDependency(&context[mSensorCount], sensor_acc.handle);
 				addDependency(&context[mSensorCount], sensor_mag.handle);
+ 				context[mSensorCount].sensor->stringType = sensorTypeToSensorString(context[mSensorCount].sensor->type);
 				mSensorCount++;
 			}
 
@@ -553,6 +561,7 @@ int NativeSensorManager::getDataInfo() {
 						virtualSensorList[ROTATION_VECTOR])) {
 				addDependency(&context[mSensorCount], sensor_acc.handle);
 				addDependency(&context[mSensorCount], sensor_mag.handle);
+ 				context[mSensorCount].sensor->stringType = sensorTypeToSensorString(context[mSensorCount].sensor->type);
 				mSensorCount++;
 			}
 
@@ -563,6 +572,7 @@ int NativeSensorManager::getDataInfo() {
 						virtualSensorList[GRAVITY])) {
 				addDependency(&context[mSensorCount], sensor_acc.handle);
 				addDependency(&context[mSensorCount], sensor_mag.handle);
+ 				context[mSensorCount].sensor->stringType = sensorTypeToSensorString(context[mSensorCount].sensor->type);
 				mSensorCount++;
 			}
 		}
@@ -575,7 +585,8 @@ int NativeSensorManager::getDataInfo() {
 		if (!initVirtualSensor(&context[mSensorCount], SENSORS_HANDLE(mSensorCount),
 					sensor_mag)) {
 			addDependency(&context[mSensorCount], sensor_mag.handle);
-			mSensorCount++;
+ 			context[mSensorCount].sensor->stringType = sensorTypeToSensorString(SENSOR_TYPE_MAGNETIC_FIELD_UNCALIBRATED);
+            mSensorCount++;
 		}
 	}
 
@@ -584,7 +595,8 @@ int NativeSensorManager::getDataInfo() {
 		if (!initVirtualSensor(&context[mSensorCount], SENSORS_HANDLE(mSensorCount),
 					sensor_gyro)) {
 			addDependency(&context[mSensorCount], sensor_gyro.handle);
-			mSensorCount++;
+ 			context[mSensorCount].sensor->stringType = sensorTypeToSensorString(SENSOR_TYPE_GYROSCOPE_UNCALIBRATED;
+            mSensorCount++;
 		}
 	}
 
@@ -594,7 +606,8 @@ int NativeSensorManager::getDataInfo() {
 					virtualSensorList[GAME_ROTATION_VECTOR])) {
 			addDependency(&context[mSensorCount], sensor_acc.handle);
 			addDependency(&context[mSensorCount], sensor_gyro.handle);
-			mSensorCount++;
+ 			context[mSensorCount].sensor->stringType = sensorTypeToSensorString(context[mSensorCount].sensor->type);
+            mSensorCount++;
 		}
 	}
 
@@ -780,15 +793,16 @@ int NativeSensorManager::getEventPath(const char *sysfs_path, char *event_path)
 	char *needle;
 
 	dir = opendir(sysfs_path);
-	if (dir == NULL) {
-		ALOGE("open %s failed.(%s)\n", strerror(errno));
-		return -1;
-	}
-	if ((sysfs_path == NULL) || (event_path == NULL)) {
+    if ((sysfs_path == NULL) || (event_path == NULL)) {
 		ALOGE("invalid NULL argument.");
 		return -EINVAL;
 	}
-
+	
+    if (dir == NULL) {
+		ALOGE("open %s failed.(%s)\n", strerror(errno));
+		return -1;
+	}
+	
 	len = readlink(sysfs_path, symlink, PATH_MAX);
 	if (len < 0) {
 		ALOGE("readlink failed for %s(%s)\n", sysfs_path, strerror(errno));
@@ -845,7 +859,7 @@ int NativeSensorManager::getSensorListInner()
 		return 0;
 	}
 	strlcpy(devname, dirname, PATH_MAX);
-	filename = devname + strlen(devname);
+    filename = devname + strlen(dirname);
 
 	while ((de = readdir(dir))) {
 		if(de->d_name[0] == '.' &&
@@ -882,15 +896,16 @@ int NativeSensorManager::getSensorListInner()
 			list->sensor->maxDelay = list->sensor->maxDelay * 1000; /* milliseconds to microseconds */
 #endif
 		list->sensor->handle = SENSORS_HANDLE(number);
-
+ 		list->sensor->stringType = sensorTypeToSensorString(list->sensor->type);
+        
 		strlcpy(nodename, "", SYSFS_MAXLEN);
 		strlcpy(list->enable_path, devname, PATH_MAX);
 
 		/* initialize data path */
 		strlcpy(nodename, "device", SYSFS_MAXLEN);
 
-		if (getEventPath(devname, list->data_path) == -ENODEV) {
-			getEventPathOld(list, list->data_path);
+        if (getEventPathOld(list, list->data_path)) {
+                        getEventPath(devname, list->data_path);
 		}
 
 		number++;
