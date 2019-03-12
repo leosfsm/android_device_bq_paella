@@ -121,7 +121,7 @@ int SensorBase::openInput(const char* inputName) {
     if(dir == NULL)
         return -1;
     strlcpy(devname, dirname, PATH_MAX);
-    filename = devname + strlen(devname);
+    filename = devname + strlen(dirname);
     *filename++ = '/';
     while((de = readdir(dir))) {
         if(de->d_name[0] == '.' &&
