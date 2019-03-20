@@ -107,6 +107,7 @@ ___________________________________________________
   | vp8      | 1920    1088    30      20      244800  |
   |____________________________________________________|
 -->
+
 <MediaCodecs>
     <Include href="media_codecs_google_audio.xml" />
     <Include href="media_codecs_google_telephony.xml" />
